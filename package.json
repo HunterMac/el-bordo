@@ -86,6 +86,11 @@
   },
   "overrides": {
     "serialize-javascript": "^7.0.5",
-    "diff": "^8.0.3"
+    "diff": "^8.0.3",
+    "@vscode/test-cli": {
+      "mocha": {
+        "glob": "^13.0.6"
+      }
+    }
   }
 }
