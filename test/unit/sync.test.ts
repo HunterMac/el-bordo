@@ -99,7 +99,7 @@ describe('board store', () => {
 
     s().resizeNode(RECT, 300, 200);
     expect(edits()).toHaveLength(1);
-    s().finishResize(RECT);
+    s().finishResize();
     expect(edits()).toHaveLength(2);
 
     s().updateNode(RECT, { color: '4' });

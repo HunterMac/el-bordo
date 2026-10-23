@@ -17,7 +17,8 @@ import {
 import { boardNodes, drawableEdges, isBoardNode, type Side } from '../../src/shared/canvasFormat';
 import { GRID_STEP } from './store';
 import { CLIPBOARD_MIME } from './clipboard';
-import { hitTest, nearestBorderAnchor, type Point } from './geometry';
+import { boundsOf, hitTest, nearestBorderAnchor, type Point, type Rect } from './geometry';
+import { intersects, snapMove } from './snapping';
 import { useBoard, useBoardStore } from './useBoard';
 import { loadViewState, saveViewState } from './vscodeApi';
 import { StickyNode } from './nodes/StickyNode';
@@ -30,9 +31,12 @@ import { LeftToolbar } from './ui/LeftToolbar';
 import { ZoomControls } from './ui/ZoomControls';
 import { NewObjectChooser } from './ui/NewObjectChooser';
 import { ContextMenu } from './ui/ContextMenu';
+import { SnapGuides } from './ui/SnapGuides';
 
 const nodeTypes = { sticky: StickyNode, rectangle: RectangleNode, file: FileNode, link: LinkNode };
 const edgeTypes = { curved: CurvedEdge };
+
+type Move = { id: string; x: number; y: number };
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
@@ -137,12 +141,58 @@ function Board() {
 
   // --- React Flow change handlers ----------------------------------------------------------
 
+  /** True while Ctrl or Cmd is held: object snapping is off. */
+  const snapOff = useRef(false);
+  /** The running node drag: ids and the last raw (unsnapped) positions from React Flow. */
+  const drag = useRef<{ ids: Set<string>; raw: Move[] } | null>(null);
+
+  /** Move the dragged nodes to `raw` shifted onto nearby object edges (or the grid), and show the guides. */
+  const applySnap = useCallback(
+    (raw: Move[]) => {
+      const api = store.getState();
+      const dragged = drag.current?.ids ?? new Set(raw.map((m) => m.id));
+      const nodes = boardNodes(api.doc);
+      const sizes = new Map(nodes.map((n) => [n.id, n]));
+      const rects: Rect[] = [];
+      for (const m of raw) {
+        const n = sizes.get(m.id);
+        if (n) rects.push({ x: m.x, y: m.y, width: n.width, height: n.height });
+      }
+      const box = boundsOf(rects);
+      if (!box) {
+        api.moveNodes(raw);
+        return;
+      }
+      const bounds = rootRef.current?.getBoundingClientRect();
+      let targets = nodes.filter((n) => !dragged.has(n.id));
+      if (bounds) {
+        const a = rf.screenToFlowPosition({ x: bounds.left, y: bounds.top });
+        const b = rf.screenToFlowPosition({ x: bounds.right, y: bounds.bottom });
+        const visible = { x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y };
+        targets = targets.filter((n) => intersects(visible, n));
+      }
+      const { dx, dy, guides } = snapMove({
+        box,
+        ref: raw[0],
+        targets,
+        zoom: rf.getViewport().zoom,
+        objects: !snapOff.current,
+        gridStep: api.settings.gridEnabled ? GRID_STEP : undefined,
+      });
+      api.moveNodes(raw.map((m) => ({ id: m.id, x: m.x + dx, y: m.y + dy })));
+      api.setSnapGuides(guides);
+    },
+    [rf, store],
+  );
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const api = store.getState();
       const sel = new Set(api.selNodes);
       let selChanged = false;
-      const moves: { id: string; x: number; y: number }[] = [];
+      let dragging = false;
+      let dragEnded = false;
+      const moves: Move[] = [];
       for (const c of changes) {
         if (c.type === 'select') {
           if (c.selected) sel.add(c.id);
@@ -150,13 +200,44 @@ function Board() {
           selChanged = true;
         } else if (c.type === 'position' && c.position) {
           moves.push({ id: c.id, x: c.position.x, y: c.position.y });
+          if (c.dragging === true) dragging = true;
+          if (c.dragging === false) dragEnded = true;
         }
       }
-      if (moves.length > 0) api.moveNodes(moves);
+      if (moves.length > 0) {
+        if (dragging || drag.current) {
+          drag.current = { ids: drag.current?.ids ?? new Set(moves.map((m) => m.id)), raw: moves };
+          applySnap(moves);
+          // React Flow ends a drag with a change that carries the last raw position again.
+          if (dragEnded) {
+            api.setSnapGuides([]);
+            drag.current = null;
+          }
+        } else {
+          api.moveNodes(moves);
+        }
+      }
       if (selChanged) api.setSelection([...sel], api.selEdges);
     },
-    [store],
+    [applySnap, store],
   );
+
+  // Ctrl/Cmd switches object snapping off, also in the middle of a drag.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Control' && e.key !== 'Meta') return;
+      const off = e.ctrlKey || e.metaKey;
+      if (off === snapOff.current) return;
+      snapOff.current = off;
+      if (drag.current) applySnap(drag.current.raw);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKey);
+    };
+  }, [applySnap]);
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
@@ -363,6 +444,8 @@ function Board() {
   // --- Mouse position (for paste) and drops from the Explorer ------------------------------
 
   const onPointerMove = (e: ReactPointerEvent) => {
+    // pointermove fires before the mousemove React Flow's drag uses, so this is current in onNodesChange.
+    snapOff.current = e.ctrlKey || e.metaKey;
     if ((e.target as Element).closest('.eb-ui')) {
       store.getState().setMouseFlow(null);
       return;
@@ -429,8 +512,7 @@ function Board() {
         fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
-        snapToGrid={gridEnabled}
-        snapGrid={[GRID_STEP, GRID_STEP]}
+        snapToGrid={false}
         selectionOnDrag
         selectionMode={SelectionMode.Partial}
         panOnDrag={[1]}
@@ -457,6 +539,7 @@ function Board() {
       >
         {gridEnabled && <Background variant={BackgroundVariant.Lines} gap={GRID_STEP} color="#EDEDED" lineWidth={1} />}
         <LeftToolbar />
+        <SnapGuides />
         <ZoomControls />
       </ReactFlow>
       <NewObjectChooser origin={origin()} />

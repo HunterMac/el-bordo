@@ -86,6 +86,10 @@ Run through this in the Extension Development Host before a release.
 - [ ] `empty.canvas` opens as an empty board; the first edit writes valid JSON. A file with broken JSON shows the error overlay and **Open as text** works; the board never overwrites it.
 - [ ] Create each object type from the left toolbar; Esc returns to the Select tool.
 - [ ] Drag, box-select, Shift+click, resize (sticky stays square), grid on/off with snapping.
+- [ ] Snapping: drag a sticky next to a rectangle: magenta guides appear at aligned edges, the sticky jumps into place, guides go away on release. Same at 25 % and 300 % zoom (pull distance and guide width look the same on screen).
+- [ ] Snapping while resizing: drag the corner handle near another object's edge: the right/bottom edge jumps onto it with a guide; a sticky stays square. Ctrl/Cmd turns it off.
+- [ ] Snapping: hold Ctrl (Cmd on Mac) mid-drag: guides go away and the object follows the pointer; release: it snaps again without moving the mouse.
+- [ ] Snapping with grid on: objects snap to edges of off-grid objects, and to the grid otherwise; resize still snaps to the grid. One undo after a snapped drag restores the start position. Objects outside the visible area are never snapped to.
 - [ ] Text toolbar: font size, colour, alignment, bold, delete. Each change is one undo step.
 - [ ] Draw a line to an object, to a ball, and to empty space (chooser, including file and link). Esc cancels the chooser.
 - [ ] Line toolbar: arrows, label (empty label disappears), delete. Drag a line end along its object and to another object; drop on empty space cancels.

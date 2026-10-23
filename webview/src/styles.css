@@ -641,3 +641,13 @@ textarea.eb-file-text {
   font: inherit;
   cursor: pointer;
 }
+
+.eb-snap-guides {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}

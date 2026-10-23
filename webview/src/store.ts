@@ -21,6 +21,7 @@ import type { BoardSettings, ExtensionMessage, FileStatus, WebviewMessage } from
 import { buildFragment, deltaToPlace, instantiate, parseFragment, type Fragment } from './clipboard';
 import { facingSide, snap, type Anchor, type Point } from './geometry';
 import { DocSync } from './sync';
+import type { SnapGuide } from './snapping';
 
 export type Tool = 'select' | 'sticky' | 'rectangle' | 'file' | 'link';
 export type NodeKind = BoardNode['kind'];
@@ -92,6 +93,8 @@ export interface BoardState {
   dropHint: boolean;
   /** Last pointer position on the board in flow coordinates, or null when the pointer is outside. */
   mouseFlow: Point | null;
+  /** Alignment guides of the current drag. UI only, never saved. */
+  snapGuides: SnapGuide[];
 }
 
 export interface NodeInit {
@@ -117,6 +120,7 @@ export interface BoardActions {
   setEndpointDrag(drag: EndpointDrag | null): void;
   setDropHint(on: boolean): void;
   setMouseFlow(p: Point | null): void;
+  setSnapGuides(guides: SnapGuide[]): void;
   setGrid(enabled: boolean): void;
 
   /** Send the current document to the extension: one call = one undo step. */
@@ -124,7 +128,7 @@ export interface BoardActions {
 
   moveNodes(moves: { id: string; x: number; y: number }[]): void;
   resizeNode(id: string, width: number, height: number): void;
-  finishResize(id: string): void;
+  finishResize(): void;
   updateNode(id: string, patch: Record<string, unknown>, commit?: boolean): void;
   updateEdge(id: string, patch: Partial<BoardEdge>, commit?: boolean): void;
 
@@ -263,6 +267,7 @@ export function createBoardStore(post: (message: WebviewMessage) => void): Board
       endpointDrag: null,
       dropHint: false,
       mouseFlow: null,
+      snapGuides: [],
 
       init(text, settings) {
         sync.reset(text);
@@ -367,6 +372,10 @@ export function createBoardStore(post: (message: WebviewMessage) => void): Board
       setEndpointDrag: (endpointDrag) => set({ endpointDrag }),
       setDropHint: (dropHint) => set({ dropHint }),
       setMouseFlow: (mouseFlow) => set({ mouseFlow }),
+      setSnapGuides(snapGuides) {
+        if (snapGuides.length === 0 && get().snapGuides.length === 0) return;
+        set({ snapGuides });
+      },
       setGrid(enabled) {
         set({ settings: { gridEnabled: enabled } });
         post({ type: 'setGrid', enabled });
@@ -408,19 +417,8 @@ export function createBoardStore(post: (message: WebviewMessage) => void): Board
         );
       },
 
-      finishResize(id) {
-        const step = gridStep();
-        if (step) {
-          mapNode(
-            id,
-            (n) => {
-              const w = Math.max(MIN_SIZE, snap(n.width, step));
-              const h = Math.max(MIN_SIZE, snap(n.height, step));
-              return n.kind === 'sticky' ? { ...n, width: Math.max(w, h), height: Math.max(w, h) } : { ...n, width: w, height: h };
-            },
-            false,
-          );
-        }
+      finishResize() {
+        get().setSnapGuides([]);
         get().commit();
       },
 
