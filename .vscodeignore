@@ -1,0 +1,9 @@
+**
+!dist/extension.js
+!dist/webview/**
+!media/**
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!README.md
+!CHANGELOG.md
+!package.json

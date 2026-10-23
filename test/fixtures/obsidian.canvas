@@ -1,0 +1,13 @@
+{
+	"nodes":[
+		{"id":"g1","type":"group","x":-40,"y":-40,"width":600,"height":400,"label":"Cluster","color":"4"},
+		{"id":"n1","type":"text","x":0,"y":0,"width":250,"height":60,"text":"Plain obsidian note","customKey":{"a":1}},
+		{"id":"n2","type":"file","x":300,"y":0,"width":250,"height":200,"file":"docs/notes.md","subpath":"#heading"},
+		{"id":"n3","type":"link","x":0,"y":120,"width":250,"height":60,"url":"https://obsidian.md"}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"n1","fromSide":"right","toNode":"n2","toSide":"left","label":"see"},
+		{"id":"e2","fromNode":"g1","fromSide":"bottom","toNode":"n3","toSide":"top","toEnd":"none","color":"2"}
+	],
+	"metadata":{"version":"1.0-1.0"}
+}

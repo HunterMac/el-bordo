@@ -1,0 +1,117 @@
+{
+  "nodes": [
+    {
+      "id": "a1b2c3d4e5f60718",
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 200,
+      "height": 200,
+      "color": "3",
+      "text": "Idea",
+      "konekton": {
+        "kind": "sticky",
+        "fontSize": 18,
+        "align": "center",
+        "bold": false
+      }
+    },
+    {
+      "id": "b2c3d4e5f6071829",
+      "type": "text",
+      "x": 300,
+      "y": 0,
+      "width": 240,
+      "height": 160,
+      "color": "#FFFFFF",
+      "text": "Body text",
+      "konekton": {
+        "kind": "rectangle",
+        "title": "Title",
+        "fontSize": 14,
+        "align": "left",
+        "bold": false
+      }
+    },
+    {
+      "id": "c3d4e5f60718293a",
+      "type": "file",
+      "x": 0,
+      "y": 300,
+      "width": 320,
+      "height": 240,
+      "file": "docs/notes.md",
+      "konekton": {
+        "fontSize": 14,
+        "align": "left",
+        "bold": false
+      }
+    },
+    {
+      "id": "d4e5f60718293a4b",
+      "type": "link",
+      "x": 400,
+      "y": 300,
+      "width": 280,
+      "height": 60,
+      "url": "https://example.com"
+    },
+    {
+      "id": "e5f60718293a4b5c",
+      "type": "file",
+      "x": 760,
+      "y": 300,
+      "width": 320,
+      "height": 240,
+      "file": "docs/missing.md",
+      "konekton": {
+        "fontSize": 14,
+        "align": "left",
+        "bold": false
+      }
+    },
+    {
+      "id": "f60718293a4b5c6d",
+      "type": "file",
+      "x": 760,
+      "y": 0,
+      "width": 320,
+      "height": 240,
+      "file": "docs/data.json",
+      "konekton": {
+        "fontSize": 12,
+        "align": "left",
+        "bold": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "0718293a4b5c6d7e",
+      "fromNode": "a1b2c3d4e5f60718",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b2c3d4e5f6071829",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "leads to",
+      "konekton": {
+        "fromOffset": 0.5,
+        "toOffset": 0.5
+      }
+    },
+    {
+      "id": "18293a4b5c6d7e8f",
+      "fromNode": "b2c3d4e5f6071829",
+      "fromSide": "bottom",
+      "fromEnd": "none",
+      "toNode": "d4e5f60718293a4b",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "konekton": {
+        "fromOffset": 0.8,
+        "toOffset": 0.5
+      }
+    }
+  ]
+}

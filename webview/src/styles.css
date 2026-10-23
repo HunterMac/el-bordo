@@ -1,0 +1,643 @@
+/* Miro-like white board. The VS Code color theme is deliberately ignored. */
+:root {
+  /* Frames never render thinner than 3px on screen; --eb-zoom is set by ZoomControls. */
+  --eb-frame-min: calc(3px / var(--eb-zoom, 1));
+  --eb-accent: #4262ff;
+  --eb-ink: #1a1a1a;
+  --eb-muted: #6b6b6b;
+  --eb-line: #e6e6e6;
+  --eb-panel-shadow: 0 2px 10px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --eb-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: var(--eb-ink);
+  font-family: var(--eb-font);
+  overflow: hidden;
+}
+
+.eb-loading {
+  height: 100%;
+  background: #fff;
+}
+
+.eb-board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  user-select: none;
+}
+
+.eb-defs {
+  position: absolute;
+  pointer-events: none;
+}
+
+.react-flow {
+  --xy-background-color: #fff;
+  --xy-edge-stroke: var(--eb-ink);
+  --xy-selection-background-color: rgba(66, 98, 255, 0.08);
+  --xy-selection-border: 1px solid var(--eb-accent);
+  background: #fff;
+}
+
+.react-flow__node {
+  cursor: default;
+}
+
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none;
+}
+
+.react-flow__attribution {
+  background: transparent;
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+.eb-tool-active .react-flow__pane,
+.eb-tool-active .react-flow__pane.draggable {
+  cursor: crosshair;
+}
+
+/* ---- Objects ---------------------------------------------------------------------------- */
+
+.eb-node {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  font-family: var(--eb-font);
+  line-height: 1.35;
+}
+
+.react-flow__node.selected > .eb-node {
+  outline: 2px solid var(--eb-accent);
+  outline-offset: 1px;
+}
+
+.eb-text {
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  margin: 0;
+}
+
+.eb-text-edit {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  overflow: auto;
+  user-select: text;
+  cursor: text;
+}
+
+.eb-placeholder {
+  color: var(--eb-muted);
+}
+
+.eb-sticky {
+  border-radius: 2px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.eb-sticky .eb-text {
+  width: 100%;
+  max-height: 100%;
+}
+
+.eb-sticky .eb-text-edit {
+  height: 100%;
+}
+
+.eb-rectangle {
+  border: max(2px, var(--eb-frame-min)) solid;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eb-rect-title {
+  flex: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eb-rect-title.eb-text-edit {
+  overflow: hidden;
+  padding: 0;
+}
+
+.eb-rect-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.eb-rect-body.eb-text-edit {
+  height: 100%;
+  padding: 0;
+}
+
+.eb-file,
+.eb-link {
+  background: #fff;
+  border: max(1px, var(--eb-frame-min)) solid #c4c4c4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.eb-file.missing {
+  background: #f3f3f3;
+  color: #8a8a8a;
+  border: max(2px, var(--eb-frame-min)) dashed #d64545;
+}
+
+.eb-file-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 6px 6px 6px 8px;
+  border-bottom: 1px solid var(--eb-line);
+  font-size: 12px;
+  background: #fafafa;
+}
+
+.eb-file.missing .eb-file-header {
+  background: #ececec;
+}
+
+.eb-file-icon {
+  flex: none;
+  color: var(--eb-muted);
+}
+
+.eb-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  white-space: nowrap;
+}
+
+.eb-path-dir {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--eb-muted);
+}
+
+.eb-path-base {
+  flex: none;
+  font-weight: 600;
+}
+
+.eb-warning {
+  flex: none;
+  color: #e8890c;
+  display: inline-flex;
+}
+
+.eb-open {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.eb-file-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.eb-file-text {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  margin: 0;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--vscode-editor-font-family, Consolas, 'Courier New', monospace);
+  color: var(--eb-ink);
+}
+
+textarea.eb-file-text {
+  overflow: auto;
+  border: none;
+  outline: none;
+  resize: none;
+  background: #fffef5;
+  user-select: text;
+  cursor: text;
+}
+
+.eb-file-note {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--eb-muted);
+  overflow-wrap: anywhere;
+}
+
+.eb-file.missing .eb-file-note {
+  color: #b33a3a;
+}
+
+.eb-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #fff3bf;
+  border-bottom: 1px solid #e6c700;
+  font-size: 12px;
+}
+
+.eb-banner span {
+  flex: 1;
+}
+
+.eb-banner button {
+  font: inherit;
+  padding: 1px 8px;
+  border: 1px solid #b89b00;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.eb-link {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.eb-link-icon {
+  flex: none;
+  color: var(--eb-accent);
+}
+
+.eb-link-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--eb-accent);
+}
+
+/* ---- Connection balls and resizing ------------------------------------------------------- */
+
+.react-flow__handle.eb-ball {
+  width: 10px;
+  height: 10px;
+  min-width: 0;
+  min-height: 0;
+  background: #fff;
+  border: 1.5px solid var(--eb-accent);
+  border-radius: 50%;
+  opacity: 0;
+  cursor: crosshair;
+  transition: opacity 80ms;
+}
+
+.react-flow__node:hover .eb-ball,
+.react-flow__node.selected .eb-ball,
+.react-flow__handle.eb-ball.connectingfrom,
+.react-flow__handle.eb-ball.connectingto {
+  opacity: 1;
+}
+
+.react-flow__handle.eb-ball:hover {
+  background: var(--eb-accent);
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+.react-flow__handle-right.eb-ball:hover,
+.react-flow__handle-left.eb-ball:hover {
+  transform: translate(0, -50%) scale(1.3);
+}
+
+.react-flow__handle-top.eb-ball:hover,
+.react-flow__handle-bottom.eb-ball:hover {
+  transform: translate(-50%, 0) scale(1.3);
+}
+
+.eb-resize.react-flow__resize-control.handle {
+  width: 16px;
+  height: 16px;
+  color: var(--eb-muted);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  opacity: 0;
+  cursor: nwse-resize;
+  transform: translate(calc(-100% + 2px), calc(-100% + 2px));
+}
+
+.react-flow__node:hover .eb-resize,
+.react-flow__node.selected .eb-resize {
+  opacity: 1;
+}
+
+/* ---- Lines ------------------------------------------------------------------------------ */
+
+.react-flow__edge-path,
+.eb-connection-line {
+  stroke: var(--eb-ink);
+  stroke-width: 2;
+  fill: none;
+}
+
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:focus .react-flow__edge-path {
+  stroke: var(--eb-ink);
+}
+
+.eb-edge-halo {
+  fill: none;
+  stroke: rgba(66, 98, 255, 0.28);
+  stroke-width: 8;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.eb-endpoint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--eb-accent);
+  cursor: grab;
+  pointer-events: all;
+  touch-action: none;
+}
+
+.eb-endpoint:active {
+  cursor: grabbing;
+}
+
+.eb-edge-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: all;
+  padding: 1px 6px;
+  background: #fff;
+  border-radius: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre;
+  color: var(--eb-ink);
+  user-select: none;
+}
+
+.eb-edge-label.editing {
+  padding: 0;
+  box-shadow: 0 0 0 2px var(--eb-accent);
+}
+
+.eb-edge-label input {
+  font: inherit;
+  border: none;
+  outline: none;
+  padding: 1px 6px;
+  background: #fff;
+  color: var(--eb-ink);
+  text-align: center;
+  user-select: text;
+}
+
+/* ---- Panels, toolbars, menus ------------------------------------------------------------- */
+
+.eb-ui {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: var(--eb-panel-shadow);
+  user-select: none;
+}
+
+.eb-left-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  margin-left: 12px !important;
+}
+
+.eb-zoom-panels {
+  display: flex;
+  gap: 8px;
+  margin: 12px !important;
+}
+
+.eb-zoom {
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  gap: 2px;
+}
+
+.eb-zoom-label {
+  width: 52px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: all;
+  white-space: nowrap;
+}
+
+/* NodeToolbar positions its own wrapper; only line toolbars are placed by transform. */
+.react-flow__node-toolbar .eb-toolbar {
+  position: static;
+}
+
+.eb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--eb-ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.eb-btn:hover {
+  background: #f0f0f0;
+}
+
+.eb-btn.active {
+  background: rgba(66, 98, 255, 0.14);
+  color: var(--eb-accent);
+}
+
+.eb-tool {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+.eb-btn-group {
+  display: flex;
+  gap: 1px;
+}
+
+.eb-select {
+  height: 28px;
+  border: 1px solid var(--eb-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--eb-ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.eb-swatches {
+  display: flex;
+  gap: 4px;
+  padding: 0 2px;
+}
+
+.eb-swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1.5px solid;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.eb-swatch.active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--eb-accent);
+}
+
+.eb-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+
+.eb-menu {
+  position: absolute;
+  z-index: 21;
+  min-width: 170px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.eb-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--eb-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.eb-menu-item:hover {
+  background: #f0f0f0;
+}
+
+.eb-drop-hint {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--eb-ink);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.eb-error {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.eb-error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+  padding: 20px 24px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--eb-panel-shadow);
+  font-size: 14px;
+  user-select: text;
+}
+
+.eb-error-card button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--eb-accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
